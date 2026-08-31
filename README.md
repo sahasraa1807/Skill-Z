@@ -7,7 +7,7 @@ Skillz is a platform designed to help developers, designers, and creators find t
 ## Tech Stack
 - **Backend**: Node.js, Express, Prisma ORM
 - **Database**: PostgreSQL
-- **Frontend**: React (planned)
+- **Frontend**: React (planned) .
 
 ## Prerequisites
 
