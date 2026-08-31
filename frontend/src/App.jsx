@@ -8,6 +8,10 @@ import SignupPage from './pages/SignupPage';
 import OnboardingPage from './pages/OnboardingPage';
 import ProfilePage from './pages/ProfilePage';
 import EditProfilePage from './pages/EditProfilePage';
+import ExploreProjectsPage from './pages/ExploreProjectsPage';
+import ProjectDetailsPage from './pages/ProjectDetailsPage';
+import CreateProjectPage from './pages/CreateProjectPage';
+import EditProjectPage from './pages/EditProjectPage';
 
 // Route guard: only for logged-in, onboarded users
 function PrivateRoute() {
@@ -43,17 +47,30 @@ function AppRoutes() {
       <Navbar />
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        
+        {/* Project Discovery (Public Views) */}
+        <Route path="/projects" element={<ExploreProjectsPage />} />
+        <Route path="/projects/:id" element={<ProjectDetailsPage />} />
+
+        {/* Guest Routes */}
         <Route element={<GuestRoute />}>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
         </Route>
+
+        {/* Onboarding */}
         <Route element={<AuthRoute />}>
           <Route path="/onboarding" element={<OnboardingPage />} />
         </Route>
+
+        {/* Authenticated / Onboarded Private Routes */}
         <Route element={<PrivateRoute />}>
+          <Route path="/projects/create" element={<CreateProjectPage />} />
+          <Route path="/projects/:id/edit" element={<EditProjectPage />} />
           <Route path="/profile/edit" element={<EditProfilePage />} />
           <Route path="/profile/:username" element={<ProfilePage />} />
         </Route>
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>

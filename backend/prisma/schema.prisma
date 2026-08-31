@@ -29,6 +29,28 @@ enum Goal {
   SHORT_TERM
 }
 
+enum ProjectType {
+  PORTFOLIO
+  HACKATHON
+  STARTUP
+  OPEN_SOURCE
+  LEARNING
+}
+
+enum ProjectStatus {
+  RECRUITING
+  ACTIVE
+  COMPLETED
+  PAUSED
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+}
+
 model User {
   id                  String   @id @default(uuid())
   name                String
@@ -43,10 +65,13 @@ model User {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
-  preferences UserPreferences?
-  skills      UserSkill[]
-  interests   UserInterest[]
-  goals       UserGoal[]
+  preferences      UserPreferences?
+  skills           UserSkill[]
+  interests        UserInterest[]
+  goals            UserGoal[]
+  ownedProjects    Project[]     @relation("OwnedProjects")
+  teamMemberships  TeamMember[]
+  joinRequests     JoinRequest[]
 
   @@map("users")
 }
@@ -70,10 +95,11 @@ model UserPreferences {
 }
 
 model Skill {
-  id         String      @id @default(uuid())
-  name       String      @unique
-  category   String
-  userSkills UserSkill[]
+  id              String             @id @default(uuid())
+  name            String             @unique
+  category        String
+  userSkills      UserSkill[]
+  projectRoleSkills ProjectRoleSkill[]
 
   @@map("skills")
 }
@@ -118,4 +144,81 @@ model UserGoal {
 
   @@id([userId, goal])
   @@map("user_goals")
+}
+
+// ─── Phase 2: Project Discovery ────────────────────────────
+
+model Project {
+  id              String        @id @default(uuid())
+  ownerId         String
+  title           String
+  description     String
+  domain          String
+  projectType     ProjectType
+  duration        String
+  commitmentHours Int
+  maxTeamSize     Int           @default(5)
+  status          ProjectStatus @default(RECRUITING)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  owner        User          @relation("OwnedProjects", fields: [ownerId], references: [id], onDelete: Cascade)
+  roles        ProjectRole[]
+  teamMembers  TeamMember[]
+  joinRequests JoinRequest[]
+
+  @@map("projects")
+}
+
+model ProjectRole {
+  id        String             @id @default(uuid())
+  projectId String
+  roleName  String
+  openings  Int                @default(1)
+
+  project   Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  skills    ProjectRoleSkill[]
+
+  @@map("project_roles")
+}
+
+model ProjectRoleSkill {
+  projectRoleId String
+  skillId       String
+
+  role  ProjectRole @relation(fields: [projectRoleId], references: [id], onDelete: Cascade)
+  skill Skill       @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([projectRoleId, skillId])
+  @@map("project_role_skills")
+}
+
+model TeamMember {
+  id        String   @id @default(uuid())
+  projectId String
+  userId    String
+  role      String
+  joinedAt  DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@map("team_members")
+}
+
+model JoinRequest {
+  id        String        @id @default(uuid())
+  projectId String
+  userId    String
+  message   String?
+  status    RequestStatus @default(PENDING)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@map("join_requests")
 }

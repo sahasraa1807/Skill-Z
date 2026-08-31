@@ -1,6 +1,7 @@
 export default function Input({
   label,
   id,
+  name,
   type = 'text',
   value,
   onChange,
@@ -9,7 +10,8 @@ export default function Input({
   hint = '',
   required = false,
   disabled = false,
-  className = ''
+  className = '',
+  ...props
 }) {
   return (
     <div className={`flex flex-col gap-1 ${className}`}>
@@ -21,6 +23,7 @@ export default function Input({
       )}
       <input
         id={id}
+        name={name || id}
         type={type}
         value={value}
         onChange={onChange}
@@ -29,6 +32,7 @@ export default function Input({
         className={`px-3 py-2 rounded-lg border text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed ${
           error ? 'border-red-400 bg-red-50' : 'border-gray-300 bg-white'
         }`}
+        {...props}
       />
       {error && <p className="text-xs text-red-600">{error}</p>}
       {hint && !error && <p className="text-xs text-gray-500">{hint}</p>}

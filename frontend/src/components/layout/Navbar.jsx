@@ -17,15 +17,26 @@ export default function Navbar() {
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
-            <span className="text-xl font-bold text-primary-600">Skillz</span>
-          </Link>
+          {/* Logo & Nav Links */}
+          <div className="flex items-center gap-8">
+            <Link to="/" className="flex items-center gap-2">
+              <span className="text-xl font-bold text-primary-600">Skillz</span>
+            </Link>
+            <Link to="/projects" className="text-sm font-medium text-gray-600 hover:text-primary-600 transition-colors">
+              Explore Projects
+            </Link>
+          </div>
 
-          {/* Nav links */}
+          {/* User actions */}
           <div className="flex items-center gap-4">
             {isAuthenticated ? (
-              <div className="relative">
+              <div className="relative flex items-center gap-3">
+                <Link
+                  to="/projects/create"
+                  className="hidden sm:inline-flex items-center text-xs font-semibold px-3 py-1.5 bg-primary-50 text-primary-700 border border-primary-200 rounded-lg hover:bg-primary-100 transition-colors"
+                >
+                  + Post Project
+                </Link>
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
                   className="flex items-center gap-2 focus:outline-none"
@@ -38,7 +49,7 @@ export default function Navbar() {
                 </button>
 
                 {dropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                     <Link
                       to={`/profile/${user?.username}`}
                       onClick={() => setDropdownOpen(false)}
@@ -52,6 +63,13 @@ export default function Navbar() {
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                     >
                       Edit Profile
+                    </Link>
+                    <Link
+                      to="/projects/create"
+                      onClick={() => setDropdownOpen(false)}
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    >
+                      Post New Project
                     </Link>
                     <hr className="my-1 border-gray-200" />
                     <button

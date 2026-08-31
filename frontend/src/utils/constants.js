@@ -64,3 +64,25 @@ export const PROFICIENCY_COLORS = {
   INTERMEDIATE: 'bg-blue-100 text-blue-700',
   ADVANCED: 'bg-purple-100 text-purple-700'
 };
+
+export const PROJECT_TYPES = [
+  { value: 'PORTFOLIO', label: 'Portfolio' },
+  { value: 'HACKATHON', label: 'Hackathon' },
+  { value: 'STARTUP', label: 'Startup' },
+  { value: 'OPEN_SOURCE', label: 'Open Source' },
+  { value: 'LEARNING', label: 'Learning' }
+];
+
+export const PROJECT_STATUSES = [
+  { value: 'RECRUITING', label: 'Recruiting', color: 'bg-green-100 text-green-700' },
+  { value: 'ACTIVE', label: 'Active', color: 'bg-blue-100 text-blue-700' },
+  { value: 'COMPLETED', label: 'Completed', color: 'bg-gray-100 text-gray-700' },
+  { value: 'PAUSED', label: 'Paused', color: 'bg-yellow-100 text-yellow-700' }
+];
+
+export const PROJECT_DOMAINS = [
+  'Web Development', 'Mobile Development', 'AI / Machine Learning',
+  'Data Science', 'DevOps', 'Game Development', 'Blockchain',
+  'IoT', 'Cybersecurity', 'EdTech', 'HealthTech', 'FinTech',
+  'E-commerce', 'Social Impact', 'Other'
+];
