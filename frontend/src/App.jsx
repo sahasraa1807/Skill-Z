@@ -12,6 +12,8 @@ import ExploreProjectsPage from './pages/ExploreProjectsPage';
 import ProjectDetailsPage from './pages/ProjectDetailsPage';
 import CreateProjectPage from './pages/CreateProjectPage';
 import EditProjectPage from './pages/EditProjectPage';
+import ExploreTeammatesPage from './pages/ExploreTeammatesPage';
+import DashboardPage from './pages/DashboardPage';
 
 // Route guard: only for logged-in, onboarded users
 function PrivateRoute() {
@@ -48,9 +50,10 @@ function AppRoutes() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         
-        {/* Project Discovery (Public Views) */}
+        {/* Public Discovery Views */}
         <Route path="/projects" element={<ExploreProjectsPage />} />
         <Route path="/projects/:id" element={<ProjectDetailsPage />} />
+        <Route path="/people" element={<ExploreTeammatesPage />} />
 
         {/* Guest Routes */}
         <Route element={<GuestRoute />}>
@@ -65,6 +68,7 @@ function AppRoutes() {
 
         {/* Authenticated / Onboarded Private Routes */}
         <Route element={<PrivateRoute />}>
+          <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/projects/create" element={<CreateProjectPage />} />
           <Route path="/projects/:id/edit" element={<EditProjectPage />} />
           <Route path="/profile/edit" element={<EditProfilePage />} />

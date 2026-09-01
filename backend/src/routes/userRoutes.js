@@ -5,9 +5,15 @@ const authMiddleware = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
+// Public candidate exploration
+router.get('/', userController.getCandidates);
+router.get('/profile/:username', userController.getProfile);
+
+// Protected routes
 router.use(authMiddleware);
 
-router.get('/profile/:username', userController.getProfile);
+router.get('/dashboard', userController.getDashboard);
+
 
 router.put('/profile', [
   body('name').optional().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),

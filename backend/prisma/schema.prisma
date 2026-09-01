@@ -69,9 +69,11 @@ model User {
   skills           UserSkill[]
   interests        UserInterest[]
   goals            UserGoal[]
-  ownedProjects    Project[]     @relation("OwnedProjects")
+  ownedProjects    Project[]           @relation("OwnedProjects")
   teamMemberships  TeamMember[]
   joinRequests     JoinRequest[]
+  sentInvitations  ProjectInvitation[] @relation("SentInvitations")
+  receivedInvitations ProjectInvitation[] @relation("ReceivedInvitations")
 
   @@map("users")
 }
@@ -162,10 +164,11 @@ model Project {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  owner        User          @relation("OwnedProjects", fields: [ownerId], references: [id], onDelete: Cascade)
+  owner        User                @relation("OwnedProjects", fields: [ownerId], references: [id], onDelete: Cascade)
   roles        ProjectRole[]
   teamMembers  TeamMember[]
   joinRequests JoinRequest[]
+  invitations  ProjectInvitation[]
 
   @@map("projects")
 }
@@ -222,3 +225,25 @@ model JoinRequest {
   @@unique([projectId, userId])
   @@map("join_requests")
 }
+
+// ─── Phase 3: Teammate Discovery & Invitations ─────────────
+
+model ProjectInvitation {
+  id         String        @id @default(uuid())
+  projectId  String
+  senderId   String
+  receiverId String
+  roleName   String
+  message    String?
+  status     RequestStatus @default(PENDING)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  project  Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sender   User    @relation("SentInvitations", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User    @relation("ReceivedInvitations", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, receiverId])
+  @@map("project_invitations")
+}
+

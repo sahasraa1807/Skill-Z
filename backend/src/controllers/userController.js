@@ -142,3 +142,22 @@ exports.getConfidence = async (req, res, next) => {
     next(err);
   }
 };
+
+exports.getCandidates = async (req, res, next) => {
+  try {
+    const result = await userService.getCandidates(req.query);
+    return success(res, result, 'Candidates retrieved successfully');
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getDashboard = async (req, res, next) => {
+  try {
+    const dashboard = await userService.getDashboard(req.user.userId);
+    return success(res, dashboard, 'Dashboard data retrieved successfully');
+  } catch (err) {
+    next(err);
+  }
+};
+

@@ -44,4 +44,17 @@ router.post(
 
 router.get('/:id/applications', authMiddleware, projectController.getProjectApplications);
 
+const invitationController = require('../controllers/invitationController');
+
+router.post(
+  '/:id/invite',
+  authMiddleware,
+  [
+    body('receiverId').isUUID().withMessage('Valid receiverId is required'),
+    body('roleName').notEmpty().withMessage('Role name is required')
+  ],
+  invitationController.sendInvitation
+);
+
 module.exports = router;
+

@@ -140,3 +140,149 @@ exports.getMyGoals = async (userId) => {
 exports.getConfidence = async (userId) => {
   return confidenceService.calculateConfidence(userId);
 };
+
+exports.getCandidates = async ({ search, skill, experienceLevel, minHours, page = 1, limit = 12 }) => {
+  const skip = (page - 1) * limit;
+  const where = {
+    onboardingCompleted: true
+  };
+
+  if (search) {
+    where.OR = [
+      { name: { contains: search, mode: 'insensitive' } },
+      { username: { contains: search, mode: 'insensitive' } },
+      { bio: { contains: search, mode: 'insensitive' } },
+      { location: { contains: search, mode: 'insensitive' } }
+    ];
+  }
+
+  if (skill) {
+    where.skills = {
+      some: {
+        OR: [
+          { skillId: skill },
+          { skill: { name: { contains: skill, mode: 'insensitive' } } }
+        ]
+      }
+    };
+  }
+
+  const prefsWhere = {};
+  if (experienceLevel) {
+    prefsWhere.experienceLevel = experienceLevel;
+  }
+  if (minHours) {
+    prefsWhere.availabilityHours = { gte: parseInt(minHours, 10) };
+  }
+  if (Object.keys(prefsWhere).length > 0) {
+    where.preferences = prefsWhere;
+  }
+
+  const [candidates, total] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      skip,
+      take: parseInt(limit, 10),
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        bio: true,
+        location: true,
+        avatarUrl: true,
+        createdAt: true,
+        preferences: true,
+        skills: {
+          include: {
+            skill: true
+          }
+        },
+        interests: {
+          include: {
+            interest: true
+          }
+        },
+        goals: true
+      },
+      orderBy: { createdAt: 'desc' }
+    }),
+    prisma.user.count({ where })
+  ]);
+
+  return {
+    candidates,
+    total,
+    page: parseInt(page, 10),
+    totalPages: Math.ceil(total / limit)
+  };
+};
+
+exports.getDashboard = async (userId) => {
+  const [ownedProjects, memberProjects, joinRequests, receivedInvitations, sentInvitations] = await Promise.all([
+    prisma.project.findMany({
+      where: { ownerId: userId },
+      include: {
+        roles: { include: { skills: { include: { skill: true } } } },
+        teamMembers: { include: { user: { select: { id: true, name: true, username: true, avatarUrl: true } } } },
+        _count: { select: { joinRequests: true, teamMembers: true, invitations: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    }),
+    prisma.project.findMany({
+      where: {
+        teamMembers: {
+          some: { userId }
+        },
+        NOT: {
+          ownerId: userId
+        }
+      },
+      include: {
+        owner: { select: { id: true, name: true, username: true, avatarUrl: true } },
+        roles: { include: { skills: { include: { skill: true } } } },
+        teamMembers: { include: { user: { select: { id: true, name: true, username: true, avatarUrl: true } } } }
+      },
+      orderBy: { createdAt: 'desc' }
+    }),
+    prisma.joinRequest.findMany({
+      where: { userId },
+      include: {
+        project: {
+          include: {
+            owner: { select: { id: true, name: true, username: true, avatarUrl: true } }
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    }),
+    prisma.projectInvitation.findMany({
+      where: { receiverId: userId },
+      include: {
+        project: {
+          include: {
+            owner: { select: { id: true, name: true, username: true, avatarUrl: true } }
+          }
+        },
+        sender: { select: { id: true, name: true, username: true, avatarUrl: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    }),
+    prisma.projectInvitation.findMany({
+      where: { senderId: userId },
+      include: {
+        project: true,
+        receiver: { select: { id: true, name: true, username: true, avatarUrl: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+  ]);
+
+  return {
+    ownedProjects,
+    memberProjects,
+    joinRequests,
+    receivedInvitations,
+    sentInvitations
+  };
+};
+
