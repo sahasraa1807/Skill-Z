@@ -69,3 +69,14 @@ export const getProfileConfidence = async () => {
   const res = await api.get('/users/confidence');
   return res.data;
 };
+
+export const getCandidates = async (params = {}) => {
+  const res = await api.get('/users', { params });
+  return res.data;
+};
+
+export const getDashboard = async () => {
+  const res = await api.get('/users/dashboard');
+  return res.data;
+};
+

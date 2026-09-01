@@ -18,13 +18,21 @@ export default function Navbar() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo & Nav Links */}
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-6">
             <Link to="/" className="flex items-center gap-2">
               <span className="text-xl font-bold text-primary-600">Skillz</span>
             </Link>
             <Link to="/projects" className="text-sm font-medium text-gray-600 hover:text-primary-600 transition-colors">
               Explore Projects
             </Link>
+            <Link to="/people" className="text-sm font-medium text-gray-600 hover:text-primary-600 transition-colors">
+              Find Teammates
+            </Link>
+            {isAuthenticated && (
+              <Link to="/dashboard" className="text-sm font-medium text-gray-600 hover:text-primary-600 transition-colors hidden md:block">
+                Dashboard
+              </Link>
+            )}
           </div>
 
           {/* User actions */}
@@ -50,6 +58,13 @@ export default function Navbar() {
 
                 {dropdownOpen && (
                   <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                    <Link
+                      to="/dashboard"
+                      onClick={() => setDropdownOpen(false)}
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 font-medium"
+                    >
+                      Dashboard
+                    </Link>
                     <Link
                       to={`/profile/${user?.username}`}
                       onClick={() => setDropdownOpen(false)}
