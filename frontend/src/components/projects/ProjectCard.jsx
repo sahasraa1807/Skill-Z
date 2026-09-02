@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import Avatar from '../common/Avatar';
+import CompatibilityBadge from '../common/CompatibilityBadge';
 import { PROJECT_STATUSES, PROJECT_TYPES } from '../../utils/constants';
 
 export default function ProjectCard({ project }) {
@@ -14,13 +15,16 @@ export default function ProjectCard({ project }) {
         <div className="flex justify-between items-start mb-4">
           <div>
             <h3 className="text-lg font-bold text-gray-900 line-clamp-1">{project.title}</h3>
-            <div className="flex flex-wrap gap-2 mt-2">
+            <div className="flex flex-wrap items-center gap-2 mt-2">
               <span className="bg-gray-100 text-gray-700 text-xs px-2 py-0.5 rounded-full">
                 {project.domain}
               </span>
               <span className="bg-primary-100 text-primary-700 text-xs px-2 py-0.5 rounded-full">
                 {typeLabel}
               </span>
+              {project.compatibility && (
+                <CompatibilityBadge compatibility={project.compatibility} size="sm" />
+              )}
             </div>
           </div>
           <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusConfig.color} whitespace-nowrap ml-2`}>

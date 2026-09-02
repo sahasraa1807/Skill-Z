@@ -7,17 +7,24 @@ import ErrorMessage from '../components/common/ErrorMessage';
 import Button from '../components/common/Button';
 import Avatar from '../components/common/Avatar';
 import SkillTag from '../components/common/SkillTag';
+import CompatibilityBadge from '../components/common/CompatibilityBadge';
+import CandidateCard from '../components/people/CandidateCard';
+import InviteModal from '../components/people/InviteModal';
 import JoinRequestModal from '../components/projects/JoinRequestModal';
 import OwnerApplicationPanel from '../components/projects/OwnerApplicationPanel';
 import { getProjectById, getProjectApplications, acceptApplication, rejectApplication, applyToProject } from '../services/projectService';
+import { getProjectCompatibility, getRecommendedCandidates } from '../services/matchingService';
+import { sendInvitation } from '../services/invitationService';
 import { PROJECT_TYPES, PROJECT_STATUSES } from '../utils/constants';
 
 export default function ProjectDetailsPage() {
   const { id } = useParams();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   
   const [project, setProject] = useState(null);
   const [applications, setApplications] = useState([]);
+  const [compatibility, setCompatibility] = useState(null);
+  const [recommendedCandidates, setRecommendedCandidates] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   
@@ -26,6 +33,12 @@ export default function ProjectDetailsPage() {
   const [isApplying, setIsApplying] = useState(false);
   const [applySuccess, setApplySuccess] = useState(false);
   
+  // Invite candidate state (for owner)
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [activeCandidate, setActiveCandidate] = useState(null);
+  const [isSendingInvite, setIsSendingInvite] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
   // App processing state
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -34,13 +47,27 @@ export default function ProjectDetailsPage() {
       setIsLoading(true);
       try {
         const res = await getProjectById(id);
-        setProject(res.data);
+        const projData = res.data;
+        setProject(projData);
         
-        // If owner, fetch applications
-        const isProjectOwner = user && (user.id === res.data.ownerId || user.id === res.data.owner?.id || user.username === res.data.owner?.username);
+        const isProjectOwner = user && (user.id === projData.ownerId || user.id === projData.owner?.id || user.username === projData.owner?.username);
+
+        // If owner, fetch applications and recommended candidates
         if (isProjectOwner) {
-          const appRes = await getProjectApplications(id);
+          const [appRes, recRes] = await Promise.all([
+            getProjectApplications(id).catch(() => ({ data: [] })),
+            getRecommendedCandidates(id, 4).catch(() => ({ data: [] }))
+          ]);
           setApplications(appRes.data || []);
+          setRecommendedCandidates(recRes.data || []);
+        } else if (isAuthenticated) {
+          // If viewing as a candidate, fetch real-time compatibility score
+          try {
+            const compRes = await getProjectCompatibility(id);
+            setCompatibility(compRes.data);
+          } catch (e) {
+            console.error('Failed to load compatibility:', e);
+          }
         }
       } catch (err) {
         setError(err.response?.data?.error || err.response?.data?.message || 'Failed to load project details');
@@ -49,7 +76,7 @@ export default function ProjectDetailsPage() {
       }
     };
     fetchProjectAndApps();
-  }, [id, user]);
+  }, [id, user, isAuthenticated]);
 
   const handleApply = async (message) => {
     setIsApplying(true);
@@ -71,7 +98,6 @@ export default function ProjectDetailsPage() {
       // Refresh project to get updated team members
       const res = await getProjectById(id);
       setProject(res.data);
-      // Remove accepted app from list
       setApplications(apps => apps.filter(a => a.id !== appId));
     } catch (err) {
       alert(err.response?.data?.error || err.response?.data?.message || 'Failed to accept application');
@@ -92,7 +118,33 @@ export default function ProjectDetailsPage() {
     }
   };
 
-  if (isLoading) return <LoadingSpinner fullPage />;
+  const handleOpenInvite = (candidate) => {
+    setActiveCandidate(candidate);
+    setInviteModalOpen(true);
+  };
+
+  const handleSendInvite = async (data) => {
+    setIsSendingInvite(true);
+    try {
+      await sendInvitation(id, {
+        receiverId: data.receiverId,
+        roleName: data.roleName,
+        message: data.message
+      });
+      setInviteModalOpen(false);
+      setToastMessage(`Invitation sent to ${activeCandidate.name}!`);
+      setTimeout(() => setToastMessage(''), 4000);
+      // Refresh candidates list
+      const recRes = await getRecommendedCandidates(id, 4);
+      setRecommendedCandidates(recRes.data || []);
+    } catch (err) {
+      alert(err.response?.data?.error || err.response?.data?.message || 'Failed to send invitation');
+    } finally {
+      setIsSendingInvite(false);
+    }
+  };
+
+  if (isLoading) return <LoadingSpinner fullPage message="Loading project studio..." />;
   if (error || !project) return <ErrorMessage message={error || 'Project not found'} />;
 
   const isOwner = user && (user.id === project.ownerId || user.id === project.owner?.id || user.username === project.owner?.username);
@@ -113,6 +165,14 @@ export default function ProjectDetailsPage() {
         {/* Main Content */}
         <div className="flex-1 flex flex-col gap-8">
           
+          {/* Toast Notification */}
+          {toastMessage && (
+            <div className="p-4 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-sm font-medium flex items-center justify-between animate-in fade-in">
+              <span>{toastMessage}</span>
+              <button onClick={() => setToastMessage('')} className="text-emerald-600 hover:text-emerald-900">✕</button>
+            </div>
+          )}
+
           {/* Header Card */}
           <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 relative">
             {isOwner && (
@@ -124,7 +184,7 @@ export default function ProjectDetailsPage() {
               </Link>
             )}
             
-            <div className="flex flex-wrap gap-2 mb-4">
+            <div className="flex flex-wrap items-center gap-2 mb-4">
               <span className="bg-gray-100 text-gray-700 text-xs px-3 py-1 rounded-full font-medium">
                 {project.domain}
               </span>
@@ -134,6 +194,9 @@ export default function ProjectDetailsPage() {
               <span className={`${statusConfig.color} text-xs px-3 py-1 rounded-full font-medium`}>
                 {statusConfig.label}
               </span>
+              {compatibility && !isOwner && (
+                <CompatibilityBadge compatibility={compatibility} size="md" />
+              )}
             </div>
 
             <h1 className="text-3xl font-bold text-gray-900 mb-6">{project.title}</h1>
@@ -162,27 +225,27 @@ export default function ProjectDetailsPage() {
             </div>
           </div>
 
-          {/* Roles */}
+          {/* Open Roles */}
           <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">Open Roles</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-6">Open Roles & Required Skills</h2>
             
             {!project.roles || project.roles.length === 0 ? (
               <p className="text-gray-500 italic">No specific roles defined.</p>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {project.roles.map((role, idx) => (
                   <div key={idx} className="bg-gray-50 border border-gray-100 rounded-xl p-5">
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="font-semibold text-gray-900">{role.roleName}</h3>
-                      <span className="text-xs font-medium bg-white px-2 py-1 rounded-md border border-gray-200 text-gray-600">
+                    <div className="flex justify-between items-center mb-3">
+                      <h3 className="font-semibold text-gray-900 text-base">{role.roleName}</h3>
+                      <span className="text-xs font-medium bg-white px-2.5 py-1 rounded-md border border-gray-200 text-gray-700">
                         {role.openings} opening{role.openings !== 1 ? 's' : ''}
                       </span>
                     </div>
                     
-                    {role.skillIds && role.skillIds.length > 0 ? (
+                    {role.skills && role.skills.length > 0 ? (
                       <div className="flex flex-wrap gap-2">
-                        {role.skillIds.map(skill => (
-                          <SkillTag key={skill._id || skill} skill={skill} />
+                        {role.skills.map((rs, sIdx) => (
+                          <SkillTag key={sIdx} name={rs.skill?.name || rs.name} />
                         ))}
                       </div>
                     ) : (
@@ -195,92 +258,159 @@ export default function ProjectDetailsPage() {
           </div>
           
           {/* Owner Applications Panel */}
-          {isOwner && <OwnerApplicationPanel applications={applications} onAccept={handleAccept} onReject={handleReject} isProcessing={isProcessing} />}
+          {isOwner && applications.length > 0 && (
+            <OwnerApplicationPanel applications={applications} onAccept={handleAccept} onReject={handleReject} isProcessing={isProcessing} />
+          )}
+
+          {/* Owner Recommended Candidates Section */}
+          {isOwner && recommendedCandidates.length > 0 && (
+            <div className="bg-gradient-to-br from-primary-50 via-white to-blue-50 p-6 rounded-3xl border border-primary-100 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="p-1.5 bg-primary-600 text-white rounded-lg text-sm">✨</span>
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900">Recommended Candidates For This Project</h2>
+                    <p className="text-xs text-gray-500">Based on your open roles, required skills, and commitment hours.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {recommendedCandidates.map(candidate => (
+                  <CandidateCard 
+                    key={candidate.id} 
+                    candidate={candidate} 
+                    onInvite={handleOpenInvite}
+                    currentUserId={user?.id}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
 
         </div>
-        
+
         {/* Sidebar */}
         <div className="w-full lg:w-80 flex flex-col gap-6">
           
           {/* Action Card */}
-          {!isOwner && (
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-              {applySuccess ? (
-                <div className="text-center p-4 bg-green-50 rounded-xl border border-green-100">
-                  <svg className="w-8 h-8 text-green-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                  </svg>
-                  <p className="text-green-800 font-medium">Application sent!</p>
-                  <p className="text-xs text-green-600 mt-1">The project owner will review your request.</p>
-                </div>
-              ) : isMember ? (
-                <div className="text-center p-4 bg-primary-50 rounded-xl border border-primary-100">
-                  <p className="text-primary-800 font-medium">You are a member</p>
-                </div>
-              ) : user ? (
-                <>
-                  <h3 className="font-semibold text-gray-900 mb-2">Interested?</h3>
-                  <p className="text-sm text-gray-600 mb-4">Send a request to join this project team.</p>
-                  <Button variant="primary" fullWidth onClick={() => setIsJoinModalOpen(true)}>
-                    Request to Join
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+            {isOwner ? (
+              <div className="text-center">
+                <p className="text-sm font-medium text-gray-900 mb-2">You own this project</p>
+                <p className="text-xs text-gray-500 mb-4">Manage applications or invite candidates directly.</p>
+                <Link to="/people" className="w-full block">
+                  <Button variant="secondary" size="sm" fullWidth>
+                    Find Teammates
                   </Button>
-                </>
-              ) : (
-                <div className="text-center">
-                  <p className="text-sm text-gray-600 mb-4">Log in to apply for this project.</p>
-                  <Link to="/login">
-                    <Button variant="primary" fullWidth>Log In</Button>
-                  </Link>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Owner Card */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-            <h3 className="font-semibold text-gray-900 mb-4">Project Owner</h3>
-            {project.owner && (
-              <Link to={`/profile/${project.owner.username}`} className="flex items-center gap-3 hover:bg-gray-50 p-2 -mx-2 rounded-lg transition-colors">
-                <Avatar user={project.owner} size="md" />
-                <div>
-                  <p className="font-medium text-gray-900">{project.owner.firstName} {project.owner.lastName}</p>
-                  <p className="text-xs text-gray-500">@{project.owner.username}</p>
-                </div>
-              </Link>
-            )}
-          </div>
-
-          {/* Team Members */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-            <h3 className="font-semibold text-gray-900 mb-4">Team Members ({project.teamMembers?.length || 0}/{project.maxTeamSize})</h3>
-            
-            {!project.teamMembers || project.teamMembers.length === 0 ? (
-              <p className="text-sm text-gray-500 italic">No team members yet.</p>
+                </Link>
+              </div>
+            ) : isMember ? (
+              <div className="text-center">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 mb-2">
+                  ✓ Team Member
+                </span>
+                <p className="text-xs text-gray-500">You are already a member of this project team.</p>
+              </div>
+            ) : applySuccess ? (
+              <div className="text-center">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 mb-2">
+                  ✓ Application Sent
+                </span>
+                <p className="text-xs text-gray-500">Your application has been submitted to the project owner.</p>
+              </div>
             ) : (
-              <div className="space-y-3">
-                {project.teamMembers.map((member, idx) => (
-                  <Link key={idx} to={`/profile/${member.user?.username}`} className="flex items-center gap-3 hover:bg-gray-50 p-2 -mx-2 rounded-lg transition-colors">
-                    <Avatar user={member.user} size="sm" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{member.user?.firstName} {member.user?.lastName}</p>
-                      <p className="text-xs text-primary-600">{member.role || 'Member'}</p>
-                    </div>
-                  </Link>
-                ))}
+              <div>
+                <Button 
+                  variant="primary" 
+                  fullWidth 
+                  onClick={() => setIsJoinModalOpen(true)}
+                  disabled={project.status !== 'RECRUITING'}
+                >
+                  {project.status === 'RECRUITING' ? 'Request to Join' : 'Recruitment Closed'}
+                </Button>
+                <p className="text-xs text-gray-500 text-center mt-2">
+                  {project.status === 'RECRUITING' ? 'Send an application note to the owner.' : 'This project is not currently accepting members.'}
+                </p>
               </div>
             )}
           </div>
 
+          {/* Project Owner Card */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Project Owner</h3>
+            <div className="flex items-center gap-3">
+              <Avatar user={project.owner} size="md" />
+              <div>
+                <Link to={`/profile/${project.owner?.username}`} className="text-sm font-bold text-gray-900 hover:text-primary-600 transition-colors">
+                  {project.owner?.name}
+                </Link>
+                <p className="text-xs text-gray-500">@{project.owner?.username}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Team Members Card */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
+              Team Members ({project.teamMembers?.length || 1})
+            </h3>
+            
+            <div className="space-y-3">
+              {/* Owner */}
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <Avatar user={project.owner} size="sm" />
+                  <div>
+                    <p className="font-semibold text-gray-900">{project.owner?.name}</p>
+                    <p className="text-gray-400">Owner</p>
+                  </div>
+                </div>
+                <span className="px-2 py-0.5 rounded bg-gray-100 text-gray-600 font-medium">Lead</span>
+              </div>
+
+              {/* Members */}
+              {project.teamMembers?.map((member) => (
+                <div key={member.id} className="flex items-center justify-between text-xs pt-2 border-t border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <Avatar user={member.user} size="sm" />
+                    <div>
+                      <p className="font-semibold text-gray-900">{member.user?.name}</p>
+                      <p className="text-gray-400">{member.role}</p>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-medium">Member</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
         </div>
+
       </div>
 
-      <JoinRequestModal 
-        isOpen={isJoinModalOpen}
-        onClose={() => setIsJoinModalOpen(false)}
-        onSubmit={handleApply}
-        isLoading={isApplying}
-        projectTitle={project.title}
-      />
+      {/* Join Request Modal */}
+      {isJoinModalOpen && (
+        <JoinRequestModal 
+          projectTitle={project.title}
+          isOpen={isJoinModalOpen}
+          onClose={() => setIsJoinModalOpen(false)}
+          onSubmit={handleApply}
+          isLoading={isApplying}
+        />
+      )}
+
+      {/* Invite Modal for owner */}
+      {inviteModalOpen && activeCandidate && (
+        <InviteModal 
+          candidate={activeCandidate}
+          ownedProjects={[project]}
+          isOpen={inviteModalOpen}
+          onClose={() => setInviteModalOpen(false)}
+          onSend={handleSendInvite}
+          isLoading={isSendingInvite}
+        />
+      )}
     </PageWrapper>
   );
 }

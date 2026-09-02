@@ -5,8 +5,10 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
 import Button from '../components/common/Button';
 import Avatar from '../components/common/Avatar';
+import ProjectCard from '../components/projects/ProjectCard';
 import { getDashboard } from '../services/userService';
 import { acceptInvitation, rejectInvitation } from '../services/invitationService';
+import { getRecommendedProjects } from '../services/matchingService';
 import { useAuth } from '../context/AuthContext';
 import { PROJECT_STATUSES } from '../utils/constants';
 
@@ -15,6 +17,7 @@ export default function DashboardPage() {
 
   const [activeTab, setActiveTab] = useState('projects'); // 'projects' | 'teams' | 'applications' | 'invitations'
   const [dashboard, setDashboard] = useState(null);
+  const [recommendedProjects, setRecommendedProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -22,8 +25,12 @@ export default function DashboardPage() {
 
   const fetchDashboardData = async () => {
     try {
-      const res = await getDashboard();
-      setDashboard(res.data);
+      const [dashRes, recRes] = await Promise.all([
+        getDashboard(),
+        getRecommendedProjects(3).catch(() => ({ data: [] }))
+      ]);
+      setDashboard(dashRes.data);
+      setRecommendedProjects(recRes.data || []);
     } catch (err) {
       setError(err.response?.data?.error || err.response?.data?.message || 'Failed to load dashboard data');
     } finally {
@@ -432,6 +439,30 @@ export default function DashboardPage() {
                 );
               })
             )}
+          </div>
+        )}
+
+        {/* Recommended For You Section */}
+        {recommendedProjects.length > 0 && (
+          <div className="mt-8 bg-gradient-to-br from-primary-50 via-white to-blue-50 p-6 rounded-3xl border border-primary-100 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 bg-primary-600 text-white rounded-lg text-sm">✨</span>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">Recommended Projects For You</h2>
+                  <p className="text-xs text-gray-500">Based on your skills, goals, and availability preferences.</p>
+                </div>
+              </div>
+              <Link to="/projects">
+                <Button variant="ghost" size="sm">Explore All →</Button>
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {recommendedProjects.map(project => (
+                <ProjectCard key={project.id} project={project} />
+              ))}
+            </div>
           </div>
         )}
 

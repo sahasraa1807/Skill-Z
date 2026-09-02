@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import Avatar from '../common/Avatar';
 import SkillTag from '../common/SkillTag';
 import Button from '../common/Button';
+import CompatibilityBadge from '../common/CompatibilityBadge';
 import { EXPERIENCE_LEVELS } from '../../utils/constants';
 
 export default function CandidateCard({ candidate, onInvite, currentUserId }) {
@@ -15,12 +16,17 @@ export default function CandidateCard({ candidate, onInvite, currentUserId }) {
         <div className="flex items-start gap-4 mb-4">
           <Avatar name={candidate.name} src={candidate.avatarUrl} size="lg" />
           <div className="flex-1 min-w-0">
-            <Link 
-              to={`/profile/${candidate.username}`} 
-              className="text-lg font-bold text-gray-900 hover:text-primary-600 transition-colors block truncate"
-            >
-              {candidate.name}
-            </Link>
+            <div className="flex items-center justify-between gap-2">
+              <Link 
+                to={`/profile/${candidate.username}`} 
+                className="text-lg font-bold text-gray-900 hover:text-primary-600 transition-colors truncate"
+              >
+                {candidate.name}
+              </Link>
+              {candidate.compatibility && (
+                <CompatibilityBadge compatibility={candidate.compatibility} size="sm" />
+              )}
+            </div>
             <p className="text-sm text-gray-500 truncate">@{candidate.username}</p>
             {candidate.location && (
               <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1 truncate">

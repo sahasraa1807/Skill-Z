@@ -8,6 +8,7 @@ import ProfileCard from '../components/profile/ProfileCard';
 import SkillsList from '../components/profile/SkillsList';
 import InterestsList from '../components/profile/InterestsList';
 import ProfileConfidenceBadge from '../components/profile/ProfileConfidenceBadge';
+import GitHubStatsCard from '../components/profile/GitHubStatsCard';
 import { GOALS, EXPERIENCE_LEVELS } from '../utils/constants';
 
 export default function ProfilePage() {
@@ -109,6 +110,10 @@ export default function ProfilePage() {
         <div className="w-full lg:w-80 flex flex-col gap-6">
           {isOwnProfile && profile.confidence && (
             <ProfileConfidenceBadge confidence={profile.confidence} />
+          )}
+
+          {profile.preferences?.githubUrl && (
+            <GitHubStatsCard githubUrl={profile.preferences.githubUrl} />
           )}
           
           <div className="bg-primary-50 rounded-xl p-5 border border-primary-100">
