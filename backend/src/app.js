@@ -10,6 +10,7 @@ const skillRoutes = require('./routes/skillRoutes');
 const interestRoutes = require('./routes/interestRoutes');
 const projectRoutes = require('./routes/projectRoutes');
 const invitationRoutes = require('./routes/invitationRoutes');
+const matchingRoutes = require('./routes/matchingRoutes');
 
 const app = express();
 
@@ -40,6 +41,7 @@ app.use('/api/skills', skillRoutes);
 app.use('/api/interests', interestRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/invitations', invitationRoutes);
+app.use('/api/matching', matchingRoutes);
 
 // Global error handler at the end
 app.use(errorMiddleware);

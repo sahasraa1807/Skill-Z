@@ -24,19 +24,22 @@ const sizes = {
   xl: 'w-24 h-24 text-3xl'
 };
 
-export default function Avatar({ name, src, size = 'md', className = '' }) {
-  if (src) {
+export default function Avatar({ name, src, user, size = 'md', className = '' }) {
+  const displayName = name || user?.name || user?.username || (user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : '');
+  const displaySrc = src || user?.avatarUrl;
+
+  if (displaySrc) {
     return (
       <img
-        src={src}
-        alt={name}
+        src={displaySrc}
+        alt={displayName}
         className={`rounded-full object-cover ${sizes[size]} ${className}`}
       />
     );
   }
   return (
-    <div className={`rounded-full flex items-center justify-center text-white font-semibold ${colorForName(name)} ${sizes[size]} ${className}`}>
-      {getInitials(name)}
+    <div className={`rounded-full flex items-center justify-center text-white font-semibold ${colorForName(displayName)} ${sizes[size]} ${className}`}>
+      {getInitials(displayName)}
     </div>
   );
 }

@@ -7,12 +7,14 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
 import Button from '../components/common/Button';
 import { getProjects } from '../services/projectService';
+import { getRecommendedProjects } from '../services/matchingService';
 import { PROJECT_DOMAINS, PROJECT_TYPES, PROJECT_STATUSES } from '../utils/constants';
 
 export default function ExploreProjectsPage() {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   
   const [projects, setProjects] = useState([]);
+  const [recommendedProjects, setRecommendedProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
@@ -33,6 +35,17 @@ export default function ExploreProjectsPage() {
     }, 500);
     return () => clearTimeout(timer);
   }, [search]);
+
+  // Fetch recommended projects for logged in user
+  useEffect(() => {
+    if (isAuthenticated) {
+      getRecommendedProjects(3)
+        .then(res => setRecommendedProjects(res.data || []))
+        .catch(err => console.error('Failed to load recommended projects', err));
+    } else {
+      setRecommendedProjects([]);
+    }
+  }, [isAuthenticated]);
 
   // Fetch projects
   useEffect(() => {
@@ -72,10 +85,31 @@ export default function ExploreProjectsPage() {
           </div>
           {user && (
             <Link to="/projects/create">
-              <Button variant="primary">Create Project</Button>
+              <Button variant="primary">+ Create Project</Button>
             </Link>
           )}
         </div>
+
+        {/* Recommended For You Section */}
+        {isAuthenticated && recommendedProjects.length > 0 && (
+          <div className="bg-gradient-to-br from-primary-50 via-white to-blue-50 p-6 rounded-3xl border border-primary-100 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 bg-primary-600 text-white rounded-lg text-sm">✨</span>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">Recommended For You</h2>
+                  <p className="text-xs text-gray-500">Based on your skills, project goals, and availability preferences.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {recommendedProjects.map(project => (
+                <ProjectCard key={project.id} project={project} />
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Filters */}
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row gap-4">
