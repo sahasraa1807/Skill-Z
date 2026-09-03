@@ -6,7 +6,7 @@ import ErrorMessage from '../components/common/ErrorMessage';
 import Button from '../components/common/Button';
 import Avatar from '../components/common/Avatar';
 import ProjectCard from '../components/projects/ProjectCard';
-import { getDashboard } from '../services/userService';
+import { getDashboard, getProfileConfidence } from '../services/userService';
 import { acceptInvitation, rejectInvitation } from '../services/invitationService';
 import { getRecommendedProjects } from '../services/matchingService';
 import { useAuth } from '../context/AuthContext';
@@ -18,6 +18,7 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState('projects'); // 'projects' | 'teams' | 'applications' | 'invitations'
   const [dashboard, setDashboard] = useState(null);
   const [recommendedProjects, setRecommendedProjects] = useState([]);
+  const [confidence, setConfidence] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -25,12 +26,14 @@ export default function DashboardPage() {
 
   const fetchDashboardData = async () => {
     try {
-      const [dashRes, recRes] = await Promise.all([
+      const [dashRes, recRes, confRes] = await Promise.all([
         getDashboard(),
-        getRecommendedProjects(3).catch(() => ({ data: [] }))
+        getRecommendedProjects(3).catch(() => ({ data: [] })),
+        getProfileConfidence().catch(() => ({ data: null }))
       ]);
       setDashboard(dashRes.data);
       setRecommendedProjects(recRes.data || []);
+      setConfidence(confRes?.data || null);
     } catch (err) {
       setError(err.response?.data?.error || err.response?.data?.message || 'Failed to load dashboard data');
     } finally {
@@ -109,6 +112,33 @@ export default function DashboardPage() {
           <div className="p-4 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-sm font-medium flex items-center justify-between animate-in fade-in">
             <span>{toastMessage}</span>
             <button onClick={() => setToastMessage('')} className="text-emerald-600 hover:text-emerald-900">✕</button>
+          </div>
+        )}
+
+        {/* Phase 5: Cold Start Credibility Assistant */}
+        {confidence && confidence.score < 60 && (
+          <div className="p-5 bg-gradient-to-r from-amber-50 via-white to-primary-50 border border-amber-200/80 rounded-2xl shadow-xs">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <span className="p-2 bg-amber-100 text-amber-800 rounded-xl text-lg">🌱</span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-gray-900">Cold Start: Build Your Credibility ({confidence.score}% Confidence)</h3>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 uppercase">
+                      {confidence.tier}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-0.5">
+                    Your self-reported skills are currently calibrating. Connect GitHub and add public project proofs to unlock high-trust recommendations!
+                  </p>
+                </div>
+              </div>
+              <Link to={`/profile/${user?.username}`}>
+                <Button variant="primary" size="sm" className="whitespace-nowrap">
+                  Boost Confidence →
+                </Button>
+              </Link>
+            </div>
           </div>
         )}
 

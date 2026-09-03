@@ -7,7 +7,7 @@ export default function CompatibilityBadge({ compatibility, size = 'sm', showDet
     return null;
   }
 
-  const { score, breakdown, reasons } = compatibility;
+  const { score, confidenceTier, confidenceScore, breakdown, reasons } = compatibility;
 
   // Determine color scheme based on score
   let badgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200';
@@ -30,6 +30,8 @@ export default function CompatibilityBadge({ compatibility, size = 'sm', showDet
     ? 'px-3 py-1 text-sm font-semibold' 
     : 'px-2 py-0.5 text-xs font-medium';
 
+  const tierIcon = confidenceTier === 'VERIFIED' ? '🛡️' : confidenceTier === 'ESTABLISHED' ? '⚡' : '🌱';
+
   return (
     <div className="relative inline-block">
       <button
@@ -45,26 +47,46 @@ export default function CompatibilityBadge({ compatibility, size = 'sm', showDet
           if (showDetails) setIsOpen(false);
         }}
         className={`inline-flex items-center gap-1.5 rounded-full border ${badgeColor} ${sizeClasses} transition-all hover:scale-105`}
-        title="View Compatibility Breakdown"
+        title="View Compatibility & Trust Breakdown"
       >
         <span className={`w-2 h-2 rounded-full ${dotColor} animate-pulse`} />
         <span>⚡ {score}% Match</span>
+        {confidenceTier && (
+          <span className="opacity-80 text-[10px] pl-0.5 border-l border-current/20">
+            {tierIcon} {confidenceTier === 'VERIFIED' ? 'Verified' : confidenceTier === 'ESTABLISHED' ? 'Est.' : 'Calib.'}
+          </span>
+        )}
       </button>
 
       {/* Popover Breakdown */}
       {isOpen && showDetails && (
         <div 
           onClick={(e) => e.stopPropagation()}
-          className="absolute left-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-xl border border-gray-200 p-4 z-50 animate-in fade-in zoom-in duration-150 text-left"
+          className="absolute left-0 top-full mt-2 w-76 bg-white rounded-2xl shadow-xl border border-gray-200 p-4 z-50 animate-in fade-in zoom-in duration-150 text-left"
         >
           <div className="flex items-center justify-between pb-2 border-b border-gray-100 mb-3">
             <div className="flex items-center gap-1.5">
-              <span className="text-sm font-bold text-gray-900">Compatibility Breakdown</span>
+              <span className="text-sm font-bold text-gray-900">Match & Trust Breakdown</span>
             </div>
             <span className="text-xs font-extrabold text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full">
-              {score}% Total
+              {score}% Match
             </span>
           </div>
+
+          {/* Profile Confidence Indicator */}
+          {confidenceTier && (
+            <div className="mb-3 p-2 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-1.5">
+                <span>{tierIcon}</span>
+                <span className="font-semibold text-gray-800">
+                  {confidenceTier === 'VERIFIED' ? 'Verified Builder' : confidenceTier === 'ESTABLISHED' ? 'Established Profile' : 'Calibrating (Cold Start)'}
+                </span>
+              </div>
+              <span className="text-[11px] font-bold text-gray-500">
+                {confidenceScore || (confidenceTier === 'VERIFIED' ? 85 : 45)}% Trust
+              </span>
+            </div>
+          )}
 
           {/* Breakdown bars */}
           {breakdown && (

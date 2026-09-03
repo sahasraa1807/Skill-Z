@@ -19,6 +19,7 @@ function calculateCompatibility(user, project) {
   // 1. Skill Synergy (Max 40 Points)
   // ─────────────────────────────────────────────────────────────
   let skillPoints = 0;
+  let verifiedMatchCount = 0;
   const projectSkillMap = new Map();
 
   // Aggregate all skills required across project roles
@@ -52,6 +53,10 @@ function calculateCompatibility(user, project) {
     projectSkillMap.forEach((skillName, skillId) => {
       if (userSkillMap.has(skillId)) {
         matchedSkillNames.push(skillName);
+        const usObj = (user.skills || []).find(s => (s.skillId || s.skill?.id) === skillId);
+        if (usObj && usObj.verified) {
+          verifiedMatchCount++;
+        }
         const level = userSkillMap.get(skillId);
         if (level === 'ADVANCED') earnedWeighted += 1.0;
         else if (level === 'INTERMEDIATE') earnedWeighted += 0.8;
@@ -128,11 +133,36 @@ function calculateCompatibility(user, project) {
     experiencePoints = 14;
   }
 
+  // ─────────────────────────────────────────────────────────────
+  // 5. Confidence & Trust Calibration (Phase 5 Cold Start)
+  // ─────────────────────────────────────────────────────────────
+  const verifiedSkillsTotal = (user.skills || []).filter(s => s.verified).length;
+  const hasGithub = !!user.preferences?.githubUrl;
+  const hasProofs = (user.projectProofs || []).length > 0;
+
+  let confidenceTier = 'CALIBRATING';
+  let confidenceScore = 30; // baseline for new self-reported users
+
+  if (verifiedSkillsTotal >= 2 || (hasGithub && hasProofs)) {
+    confidenceTier = 'VERIFIED';
+    confidenceScore = 85;
+  } else if (hasGithub || hasProofs || verifiedSkillsTotal >= 1) {
+    confidenceTier = 'ESTABLISHED';
+    confidenceScore = 60;
+  }
+
+  if (verifiedMatchCount > 0) {
+    reasons.push(`${verifiedMatchCount} skill${verifiedMatchCount > 1 ? 's' : ''} verified with code proof`);
+  }
+
   // Total clamped 0-100
   const totalScore = Math.min(100, Math.max(10, skillPoints + goalPoints + schedulePoints + experiencePoints));
 
   return {
     score: totalScore,
+    confidenceScore,
+    confidenceTier,
+    verifiedMatchCount,
     breakdown: {
       skills: skillPoints,
       goals: goalPoints,
@@ -152,7 +182,8 @@ async function getRecommendedProjects(userId, limit = 4) {
     include: {
       skills: { include: { skill: true } },
       goals: true,
-      preferences: true
+      preferences: true,
+      projectProofs: true
     }
   });
 
@@ -227,7 +258,8 @@ async function getRecommendedCandidates(projectId, limit = 4) {
     include: {
       skills: { include: { skill: true } },
       goals: true,
-      preferences: true
+      preferences: true,
+      projectProofs: true
     },
     take: 40
   });

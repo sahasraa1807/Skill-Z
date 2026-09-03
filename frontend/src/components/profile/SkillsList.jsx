@@ -7,7 +7,14 @@ export default function SkillsList({ skills }) {
   return (
     <div className="flex flex-wrap gap-2">
       {skills.map((us) => (
-        <SkillTag key={us.skill?.id || us.skillId} name={us.skill?.name || us.name} level={us.proficiencyLevel} />
+        <SkillTag 
+          key={us.skill?.id || us.skillId || us.id} 
+          name={us.skill?.name || us.name} 
+          level={us.proficiencyLevel}
+          verified={us.verified}
+          evidenceSummary={us.evidenceSummary}
+          verificationSource={us.verificationSource}
+        />
       ))}
     </div>
   );
