@@ -5,10 +5,12 @@ import InviteModal from '../components/people/InviteModal';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
 import Button from '../components/common/Button';
+import AISearchBar from '../components/common/AISearchBar';
 import { getCandidates } from '../services/userService';
 import { getAllSkills } from '../services/skillService';
 import { sendInvitation } from '../services/invitationService';
 import { getProjects } from '../services/projectService';
+import { searchPeopleSemantically } from '../services/aiService';
 import { useAuth } from '../context/AuthContext';
 import { EXPERIENCE_LEVELS } from '../utils/constants';
 
@@ -23,6 +25,7 @@ export default function ExploreTeammatesPage() {
 
   // Filters & Pagination
   const [search, setSearch] = useState('');
+  const [isAIMode, setIsAIMode] = useState(false);
   const [selectedSkill, setSelectedSkill] = useState('');
   const [selectedExp, setSelectedExp] = useState('');
   const [minHours, setMinHours] = useState('');
@@ -72,18 +75,26 @@ export default function ExploreTeammatesPage() {
       setIsLoading(true);
       setError(null);
       try {
-        const res = await getCandidates({
-          search: search.trim() || undefined,
-          skill: selectedSkill || undefined,
-          experienceLevel: selectedExp || undefined,
-          minHours: minHours || undefined,
-          page,
-          limit: 9
-        });
-        
-        setCandidates(res.data?.candidates || []);
-        setTotalPages(res.data?.totalPages || 1);
-        setTotalCount(res.data?.total || 0);
+        if (isAIMode && search.trim()) {
+          const res = await searchPeopleSemantically(search, 12);
+          const candidatesList = res.data?.candidates || [];
+          setCandidates(candidatesList);
+          setTotalPages(1);
+          setTotalCount(candidatesList.length);
+        } else {
+          const res = await getCandidates({
+            search: search.trim() || undefined,
+            skill: selectedSkill || undefined,
+            experienceLevel: selectedExp || undefined,
+            minHours: minHours || undefined,
+            page,
+            limit: 9
+          });
+          
+          setCandidates(res.data?.candidates || []);
+          setTotalPages(res.data?.totalPages || 1);
+          setTotalCount(res.data?.total || 0);
+        }
       } catch (err) {
         setError(err.response?.data?.error || err.response?.data?.message || 'Failed to load candidates');
       } finally {
@@ -158,23 +169,21 @@ export default function ExploreTeammatesPage() {
           </div>
         )}
 
+        {/* AI & Keyword Search Bar */}
+        <AISearchBar 
+          searchQuery={search}
+          onSearchChange={(val, mode) => {
+            setSearch(val);
+            if (mode !== isAIMode) setIsAIMode(mode);
+          }}
+          isAIMode={isAIMode}
+          onModeToggle={(mode) => setIsAIMode(mode)}
+          placeholder='e.g. "Looking for an engineer experienced in real-time LLM apps and Python"'
+        />
+
         {/* Search & Filter Bar */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            
-            {/* Search Input */}
-            <div className="flex-1 relative">
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                placeholder="Search by name, username, bio or location..."
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 focus:outline-none"
-              />
-              <svg className="w-5 h-5 text-gray-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
 
             {/* Skill Filter */}
             <div className="w-full md:w-52">

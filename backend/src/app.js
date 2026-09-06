@@ -12,6 +12,10 @@ const projectRoutes = require('./routes/projectRoutes');
 const invitationRoutes = require('./routes/invitationRoutes');
 const matchingRoutes = require('./routes/matchingRoutes');
 const proofRoutes = require('./routes/proofRoutes');
+const aiRoutes = require('./routes/aiRoutes');
+const teamIntelligenceRoutes = require('./routes/teamIntelligenceRoutes');
+const workspaceRoutes = require('./routes/workspaceRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 const app = express();
 
@@ -44,6 +48,10 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/invitations', invitationRoutes);
 app.use('/api/matching', matchingRoutes);
 app.use('/api/proofs', proofRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/team-intelligence', teamIntelligenceRoutes);
+app.use('/api/workspace', workspaceRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Global error handler at the end
 app.use(errorMiddleware);

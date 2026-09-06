@@ -14,6 +14,7 @@ import CreateProjectPage from './pages/CreateProjectPage';
 import EditProjectPage from './pages/EditProjectPage';
 import ExploreTeammatesPage from './pages/ExploreTeammatesPage';
 import DashboardPage from './pages/DashboardPage';
+import ProjectWorkspacePage from './pages/ProjectWorkspacePage';
 
 // Route guard: only for logged-in, onboarded users
 function PrivateRoute() {
@@ -71,6 +72,7 @@ function AppRoutes() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/projects/create" element={<CreateProjectPage />} />
           <Route path="/projects/:id/edit" element={<EditProjectPage />} />
+          <Route path="/projects/:id/workspace" element={<ProjectWorkspacePage />} />
           <Route path="/profile/edit" element={<EditProfilePage />} />
           <Route path="/profile/:username" element={<ProfilePage />} />
         </Route>

@@ -6,8 +6,10 @@ import ProjectCard from '../components/projects/ProjectCard';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
 import Button from '../components/common/Button';
+import AISearchBar from '../components/common/AISearchBar';
 import { getProjects } from '../services/projectService';
 import { getRecommendedProjects } from '../services/matchingService';
+import { searchProjectsSemantically } from '../services/aiService';
 import { PROJECT_DOMAINS, PROJECT_TYPES, PROJECT_STATUSES } from '../utils/constants';
 
 export default function ExploreProjectsPage() {
@@ -20,9 +22,10 @@ export default function ExploreProjectsPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Filters
+  // Filters & AI Search Mode
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [isAIMode, setIsAIMode] = useState(false);
   const [domain, setDomain] = useState('');
   const [projectType, setProjectType] = useState('');
   const [status, setStatus] = useState('RECRUITING');
@@ -32,7 +35,7 @@ export default function ExploreProjectsPage() {
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
       setPage(1); // Reset to page 1 on new search
-    }, 500);
+    }, 400);
     return () => clearTimeout(timer);
   }, [search]);
 
@@ -47,23 +50,29 @@ export default function ExploreProjectsPage() {
     }
   }, [isAuthenticated]);
 
-  // Fetch projects
+  // Fetch projects (Standard vs AI Semantic Search)
   useEffect(() => {
     const fetchProjects = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        const params = {
-          page,
-          limit: 9,
-          ...(debouncedSearch && { search: debouncedSearch }),
-          ...(domain && { domain }),
-          ...(projectType && { projectType }),
-          ...(status && { status })
-        };
-        const res = await getProjects(params);
-        setProjects(res.data.projects || res.data);
-        setTotalPages(res.data.totalPages || 1);
+        if (isAIMode && debouncedSearch.trim()) {
+          const res = await searchProjectsSemantically(debouncedSearch, 12);
+          setProjects(res.data?.projects || []);
+          setTotalPages(1);
+        } else {
+          const params = {
+            page,
+            limit: 9,
+            ...(debouncedSearch && { search: debouncedSearch }),
+            ...(domain && { domain }),
+            ...(projectType && { projectType }),
+            ...(status && { status })
+          };
+          const res = await getProjects(params);
+          setProjects(res.data.projects || res.data);
+          setTotalPages(res.data.totalPages || 1);
+        }
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to load projects');
       } finally {
@@ -71,7 +80,7 @@ export default function ExploreProjectsPage() {
       }
     };
     fetchProjects();
-  }, [debouncedSearch, domain, projectType, status, page]);
+  }, [debouncedSearch, isAIMode, domain, projectType, status, page]);
 
   return (
     <PageWrapper>
@@ -111,20 +120,22 @@ export default function ExploreProjectsPage() {
           </div>
         )}
 
+        {/* AI & Keyword Search Bar */}
+        <AISearchBar 
+          searchQuery={search}
+          onSearchChange={(val, mode) => {
+            setSearch(val);
+            if (mode !== isAIMode) setIsAIMode(mode);
+          }}
+          isAIMode={isAIMode}
+          onModeToggle={(mode) => setIsAIMode(mode)}
+          placeholder='e.g. "I want a project related to using AI for education"'
+        />
+
         {/* Filters */}
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
-            <input
-              type="text"
-              placeholder="Search projects..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          
+        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-200 flex flex-col md:flex-row gap-4">
           <select 
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 bg-white"
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-xl focus:ring-primary-500 focus:border-primary-500 bg-white text-sm font-medium"
             value={domain}
             onChange={(e) => { setDomain(e.target.value); setPage(1); }}
           >

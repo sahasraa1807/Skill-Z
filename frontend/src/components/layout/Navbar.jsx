@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import Avatar from '../common/Avatar';
+import NotificationDropdown from './NotificationDropdown';
 import { useState } from 'react';
 
 export default function Navbar() {
@@ -39,6 +40,7 @@ export default function Navbar() {
           <div className="flex items-center gap-4">
             {isAuthenticated ? (
               <div className="relative flex items-center gap-3">
+                <NotificationDropdown />
                 <Link
                   to="/projects/create"
                   className="hidden sm:inline-flex items-center text-xs font-semibold px-3 py-1.5 bg-primary-50 text-primary-700 border border-primary-200 rounded-lg hover:bg-primary-100 transition-colors"

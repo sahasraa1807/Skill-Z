@@ -9,7 +9,7 @@ module.exports = (req, res, next) => {
     }
     const token = authHeader.split(' ')[1];
     const decoded = verifyToken(token);
-    req.user = { userId: decoded.userId, email: decoded.email };
+    req.user = { userId: decoded.userId, id: decoded.userId, email: decoded.email };
     next();
   } catch (err) {
     return error(res, 'Invalid or expired token', 401);

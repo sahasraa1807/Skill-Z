@@ -403,6 +403,123 @@ async function main() {
     });
   }
 
+  // Project 3 by Diana: "AI Study Assistant"
+  const existingP3 = await prisma.project.findFirst({ where: { title: 'AI Study Assistant' } });
+  if (!existingP3) {
+    await prisma.project.create({
+      data: {
+        ownerId: diana.id,
+        title: 'AI Study Assistant',
+        description: 'An interactive AI-powered study companion that creates personalized flashcards, summarizes lectures, and quizzes students using LLMs.',
+        domain: 'EdTech',
+        projectType: 'HACKATHON',
+        duration: '1 month',
+        commitmentHours: 12,
+        maxTeamSize: 4,
+        status: 'RECRUITING',
+        teamMembers: { create: { userId: diana.id, role: 'Owner' } },
+        roles: {
+          create: [
+            {
+              roleName: 'AI Engineer',
+              openings: 1,
+              skills: { create: [{ skillId: skillMap['Python'] }, { skillId: skillMap['NLP'] }] }
+            },
+            {
+              roleName: 'Frontend Developer',
+              openings: 1,
+              skills: { create: [{ skillId: skillMap['React'] }, { skillId: skillMap['TypeScript'] }] }
+            }
+          ]
+        }
+      }
+    });
+  }
+
+  // Project 4 by Bob: "Smart Learning Platform"
+  const existingP4 = await prisma.project.findFirst({ where: { title: 'Smart Learning Platform' } });
+  if (!existingP4) {
+    await prisma.project.create({
+      data: {
+        ownerId: bob.id,
+        title: 'Smart Learning Platform',
+        description: 'Adaptive learning platform utilizing neural networks to personalize course pace and skill recommendations for students.',
+        domain: 'EdTech',
+        projectType: 'STARTUP',
+        duration: '3 months',
+        commitmentHours: 15,
+        maxTeamSize: 5,
+        status: 'RECRUITING',
+        teamMembers: { create: { userId: bob.id, role: 'Owner' } },
+        roles: {
+          create: [
+            {
+              roleName: 'Machine Learning Specialist',
+              openings: 1,
+              skills: { create: [{ skillId: skillMap['PyTorch'] }, { skillId: skillMap['Machine Learning'] }] }
+            }
+          ]
+        }
+      }
+    });
+  }
+
+  // Project 5 by Charlie: "AI Tutor"
+  const existingP5 = await prisma.project.findFirst({ where: { title: 'AI Tutor' } });
+  if (!existingP5) {
+    await prisma.project.create({
+      data: {
+        ownerId: charlie.id,
+        title: 'AI Tutor',
+        description: 'Generative AI tutoring bot providing real-time step-by-step guidance in math, physics, and programming for high school students.',
+        domain: 'EdTech',
+        projectType: 'OPEN_SOURCE',
+        duration: '2 months',
+        commitmentHours: 10,
+        maxTeamSize: 4,
+        status: 'RECRUITING',
+        teamMembers: { create: { userId: charlie.id, role: 'Owner' } },
+        roles: {
+          create: [
+            {
+              roleName: 'Full Stack Engineer',
+              openings: 1,
+              skills: { create: [{ skillId: skillMap['Node.js'] }, { skillId: skillMap['React'] }] }
+            }
+          ]
+        }
+      }
+    });
+  }
+
+  // Project 6 by Alice: "Personalized Education System"
+  const existingP6 = await prisma.project.findFirst({ where: { title: 'Personalized Education System' } });
+  if (!existingP6) {
+    await prisma.project.create({
+      data: {
+        ownerId: alice.id,
+        title: 'Personalized Education System',
+        description: 'An intelligent education management system tailoring curriculum pathways and homework schedules based on student performance analytics.',
+        domain: 'EdTech',
+        projectType: 'PORTFOLIO',
+        duration: '2 months',
+        commitmentHours: 8,
+        maxTeamSize: 3,
+        status: 'RECRUITING',
+        teamMembers: { create: { userId: alice.id, role: 'Owner' } },
+        roles: {
+          create: [
+            {
+              roleName: 'Data Scientist',
+              openings: 1,
+              skills: { create: [{ skillId: skillMap['Data Science'] }, { skillId: skillMap['Python'] }] }
+            }
+          ]
+        }
+      }
+    });
+  }
+
   console.log('Seeded sample projects!');
   console.log('Seed complete!');
 }

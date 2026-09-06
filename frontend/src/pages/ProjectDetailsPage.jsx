@@ -12,8 +12,11 @@ import CandidateCard from '../components/people/CandidateCard';
 import InviteModal from '../components/people/InviteModal';
 import JoinRequestModal from '../components/projects/JoinRequestModal';
 import OwnerApplicationPanel from '../components/projects/OwnerApplicationPanel';
+import AIProjectAnalysisCard from '../components/projects/AIProjectAnalysisCard';
+import TeamIntelligenceCard from '../components/projects/TeamIntelligenceCard';
 import { getProjectById, getProjectApplications, acceptApplication, rejectApplication, applyToProject } from '../services/projectService';
 import { getProjectCompatibility, getRecommendedCandidates } from '../services/matchingService';
+import { analyzeProject } from '../services/aiService';
 import { sendInvitation } from '../services/invitationService';
 import { PROJECT_TYPES, PROJECT_STATUSES } from '../utils/constants';
 
@@ -25,6 +28,7 @@ export default function ProjectDetailsPage() {
   const [applications, setApplications] = useState([]);
   const [compatibility, setCompatibility] = useState(null);
   const [recommendedCandidates, setRecommendedCandidates] = useState([]);
+  const [aiAnalysis, setAiAnalysis] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   
@@ -49,6 +53,15 @@ export default function ProjectDetailsPage() {
         const res = await getProjectById(id);
         const projData = res.data;
         setProject(projData);
+
+        // Fetch AI analysis for project
+        analyzeProject({
+          title: projData.title,
+          description: projData.description,
+          domain: projData.domain
+        })
+          .then(analysisRes => setAiAnalysis(analysisRes.data))
+          .catch(e => console.error('Failed to load AI analysis:', e));
         
         const isProjectOwner = user && (user.id === projData.ownerId || user.id === projData.owner?.id || user.username === projData.owner?.username);
 
@@ -175,14 +188,24 @@ export default function ProjectDetailsPage() {
 
           {/* Header Card */}
           <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 relative">
-            {isOwner && (
-              <Link 
-                to={`/projects/${id}/edit`} 
-                className="absolute top-6 right-6 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors"
-              >
-                Edit Project
-              </Link>
-            )}
+            <div className="absolute top-6 right-6 flex items-center gap-2">
+              {(isOwner || project.teamMembers?.some(tm => tm.userId === user?.id || tm.user?.id === user?.id)) && (
+                <Link 
+                  to={`/projects/${id}/workspace`} 
+                  className="px-3.5 py-2 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 shadow-2xs"
+                >
+                  <span>🚀</span> Team Workspace
+                </Link>
+              )}
+              {isOwner && (
+                <Link 
+                  to={`/projects/${id}/edit`} 
+                  className="px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium rounded-xl transition-colors"
+                >
+                  Edit Project
+                </Link>
+              )}
+            </div>
             
             <div className="flex flex-wrap items-center gap-2 mb-4">
               <span className="bg-gray-100 text-gray-700 text-xs px-3 py-1 rounded-full font-medium">
@@ -224,6 +247,19 @@ export default function ProjectDetailsPage() {
               </div>
             </div>
           </div>
+
+          {/* Phase 6: AI Project Insights Card */}
+          {aiAnalysis && <AIProjectAnalysisCard analysis={aiAnalysis} />}
+
+          {/* Phase 7: Team Intelligence Card */}
+          <TeamIntelligenceCard 
+            projectId={id} 
+            isOwner={isOwner} 
+            onInviteCandidate={(cand) => {
+              setActiveCandidate(cand);
+              setInviteModalOpen(true);
+            }} 
+          />
 
           {/* Open Roles */}
           <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
