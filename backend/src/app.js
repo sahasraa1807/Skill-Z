@@ -20,15 +20,13 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const app = express();
 
 // Middleware
-app.use(cors({
-  origin: config.nodeEnv === 'development' ? '*' : undefined
-}));
+app.use(cors());
 app.use(express.json());
 
-// Rate limiting: 100 requests/15min per IP
+// Rate limiting: relaxed in development (10000 requests), strict in production (100/15min)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: config.nodeEnv === 'development' ? 10000 : 100,
   standardHeaders: true,
   legacyHeaders: false,
 });

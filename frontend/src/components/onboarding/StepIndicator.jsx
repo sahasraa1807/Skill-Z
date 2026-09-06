@@ -1,11 +1,12 @@
+import { Fragment } from 'react';
+
 export default function StepIndicator({ currentStep, totalSteps, stepLabels }) {
   return (
     <div className="flex flex-col gap-3 mb-8">
       <div className="flex items-center gap-2">
         {Array.from({ length: totalSteps }).map((_, i) => (
-          <>
+          <Fragment key={i}>
             <div
-              key={i}
               className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
                 i < currentStep
                   ? 'bg-primary-600 text-white'
@@ -21,9 +22,9 @@ export default function StepIndicator({ currentStep, totalSteps, stepLabels }) {
               ) : i + 1}
             </div>
             {i < totalSteps - 1 && (
-              <div key={`line-${i}`} className={`flex-1 h-0.5 ${i < currentStep ? 'bg-primary-600' : 'bg-gray-200'}`} />
+              <div className={`flex-1 h-0.5 ${i < currentStep ? 'bg-primary-600' : 'bg-gray-200'}`} />
             )}
-          </>
+          </Fragment>
         ))}
       </div>
       {stepLabels && (
